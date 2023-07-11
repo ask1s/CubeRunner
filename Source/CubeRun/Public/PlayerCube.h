@@ -26,6 +26,9 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		UStaticMeshComponent* MeshComponent;
+
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -33,14 +36,15 @@ public:
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
-		float ForwardSpeed = 300.0f;
+		float ForwardSpeed = 450.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
-		float MovementSpeed = 500.0f;
+		float MovementSpeed = 600.0f;
 
 	void MoveRight(float Value);
 	void RestartGame();
 	bool CanMove;
 	int intTimer = 0;
+	FRotator CurrentRotation;
 
 };

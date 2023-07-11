@@ -29,6 +29,9 @@ protected:
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<ABaseLevel> Level2;
 
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level3;
+
 	TArray<ABaseLevel*> LevelList;
 
 public:	

@@ -50,7 +50,7 @@ void ALevelGenerator::SpawnLevel(bool isStart)
 
 	}
 
-	RandomLevel = FMath::RandRange(1, 2);
+	RandomLevel = FMath::RandRange(1, 3);
 	ABaseLevel* NewLevel = nullptr;
 
 	if (RandomLevel == 1)
@@ -60,6 +60,10 @@ void ALevelGenerator::SpawnLevel(bool isStart)
 	else if(RandomLevel == 2)
 	{
 		NewLevel = GetWorld()->SpawnActor<ABaseLevel>(Level2, SpawnLocation, SpawnRotation, SpawnInfo);
+	}
+	else if (RandomLevel == 3)
+	{
+		NewLevel = GetWorld()->SpawnActor<ABaseLevel>(Level3, SpawnLocation, SpawnRotation, SpawnInfo);
 	}
 
 	if (NewLevel)

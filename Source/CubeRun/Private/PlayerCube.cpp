@@ -2,8 +2,17 @@
 
 
 #include "PlayerCube.h"
+
 #include "GameFramework/PlayerController.h"
-#include "Components/CapsuleComponent.h"
+
+#include "Components/StaticMeshComponent.h"
+
+#include "ObstaclesLogic.h"
+#include "RightTrampoline.h"
+#include "LeftTrampoline.h"
+
+#include "Engine.h"
+
 // Sets default values
 APlayerCube::APlayerCube()
 {
@@ -17,8 +26,13 @@ void APlayerCube::BeginPlay()
 {
 	Super::BeginPlay();
 
+	MeshComponent = Cast<UStaticMeshComponent>(GetComponentByClass(UStaticMeshComponent::StaticClass()));
+	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &APlayerCube::OnOverlapBegin);
 
-	//GetCapsuleComponent().OnComponentBeginOverlap.AddDynamic(this, &APlayerCube::OnOverlapBegin)
+	//Attempt #1
+	//MeshComponent->BodyInstance.bLockXRotation = true;
+	//MeshComponent->BodyInstance.bLockYRotation = true;
+	//MeshComponent->BodyInstance.bLockZRotation = true;
 	
 	CanMove = true;
 }
@@ -42,6 +56,10 @@ void APlayerCube::Tick(float DeltaTime)
 		ForwardSpeed += 10;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 0.01f, FColor::Yellow, FString::Printf(TEXT("Speed: %.0f"), ForwardSpeed));
+
+	//Attempt #2
+	//CurrentRotation = GetActorRotation();
+	//SetActorRotation(FRotator(0.f, CurrentRotation.Yaw, 0.f));
 
 }
 
@@ -67,9 +85,42 @@ void APlayerCube::MoveRight(float Value)
 
 void APlayerCube::RestartGame()
 {
+	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()));
 }
 void APlayerCube::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (OtherActor != nullptr)
+	{
+		AObstaclesLogic* Obstacle = Cast<AObstaclesLogic>(OtherActor);
+		ARightTrampoline* rTrampoline = Cast<ARightTrampoline>(OtherActor);
+		ALeftTrampoline* lTrampoline = Cast<ALeftTrampoline>(OtherActor);
+
+		if (Obstacle)
+		{
+			MeshComponent->Deactivate();
+			MeshComponent->SetVisibility(false);
+
+			CanMove = false;
+
+			FTimerHandle UnusedHandle;
+			GetWorldTimerManager().SetTimer(UnusedHandle, this, &APlayerCube::RestartGame, 2.f, false);
+
+		}
+		if (rTrampoline || lTrampoline)
+		{
+			FVector tempVector = FVector(0.f, 0.f, 0.f);
+			if (rTrampoline)
+			{
+				tempVector = FVector(0.f, -50.f, 200.f);
+			}
+			else if (lTrampoline)
+			{
+				tempVector = FVector(0.f, 50.f, 200.f);
+			}
+			MeshComponent->AddImpulse(tempVector, "", true);
+		}
+
+	}
 }
 
 
