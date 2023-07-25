@@ -25,12 +25,24 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<ABaseLevel> Level1;
-
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<ABaseLevel> Level2;
-
 	UPROPERTY(EditAnywhere)
 		TSubclassOf<ABaseLevel> Level3;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level4;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level5;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level6;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level7;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level8;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level9;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseLevel> Level10;
 
 	TArray<ABaseLevel*> LevelList;
 

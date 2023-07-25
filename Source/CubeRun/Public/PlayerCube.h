@@ -31,20 +31,40 @@ public:
 
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
+	UFUNCTION()
+		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+			FVector NormalImpulse, const FHitResult& Hit);
 
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
 		float ForwardSpeed = 450.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
 		float MovementSpeed = 600.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
+		float JumpForce = 435.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
+		float trampolineBackImpusle = 450.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Variables", meta = (AllowPrivateAccess = "true"))
+		float trampolineUpImpusle = 275.0f;
+
 
 	void MoveRight(float Value);
-	void RestartGame();
+
 	bool CanMove;
+	void RestartGame();
+
+	float TimesJumped = 0;
+	float JumpCount = 1;
+	void Jump();
+
+	bool isProtected = false;
+	int DoubleJump_Timer = 0;
+	bool DoubleJump_TimerStarted = false;
+
+
 	int intTimer = 0;
+
 	FRotator CurrentRotation;
 
 };

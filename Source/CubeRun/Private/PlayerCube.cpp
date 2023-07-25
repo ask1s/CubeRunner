@@ -10,6 +10,8 @@
 #include "ObstaclesLogic.h"
 #include "RightTrampoline.h"
 #include "LeftTrampoline.h"
+#include "Booster_Protection.h"
+#include "Booster_DoubleJump.h"
 
 #include "Engine.h"
 
@@ -28,13 +30,11 @@ void APlayerCube::BeginPlay()
 
 	MeshComponent = Cast<UStaticMeshComponent>(GetComponentByClass(UStaticMeshComponent::StaticClass()));
 	MeshComponent->OnComponentBeginOverlap.AddDynamic(this, &APlayerCube::OnOverlapBegin);
-
-	//Attempt #1
-	//MeshComponent->BodyInstance.bLockXRotation = true;
-	//MeshComponent->BodyInstance.bLockYRotation = true;
-	//MeshComponent->BodyInstance.bLockZRotation = true;
+	MeshComponent->OnComponentHit.AddDynamic(this, &APlayerCube::OnHit);
 	
 	CanMove = true;
+	isProtected = false;
+	JumpCount = 1;
 }
 
 // Called every frame
@@ -54,13 +54,28 @@ void APlayerCube::Tick(float DeltaTime)
 	{
 		intTimer = 0;
 		ForwardSpeed += 10;
+		
+		if (DoubleJump_TimerStarted)
+			DoubleJump_Timer++;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 0.01f, FColor::Yellow, FString::Printf(TEXT("Speed: %.0f"), ForwardSpeed));
+	if (DoubleJump_Timer >= 10)
+	{
+		JumpCount = 1;
+		DoubleJump_TimerStarted = false;
+		DoubleJump_Timer = 0;
+	}
 
-	//Attempt #2
-	//CurrentRotation = GetActorRotation();
-	//SetActorRotation(FRotator(0.f, CurrentRotation.Yaw, 0.f));
 
+
+
+	if (GetActorLocation().Z <= -30)
+	{
+		FTimerHandle UnusedHandle;
+		GetWorldTimerManager().SetTimer(UnusedHandle, this, &APlayerCube::RestartGame, 1.f, false);
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 0.01f, FColor::Red, FString::Printf(TEXT("Speed: %.0f"), ForwardSpeed));
+	GEngine->AddOnScreenDebugMessage(-2, 0.01f, FColor::Red, FString::Printf(TEXT("TimesJumped: %.0f"), TimesJumped));
 }
 
 // Called to bind functionality to input
@@ -69,6 +84,7 @@ void APlayerCube::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
 	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCube::MoveRight);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCube::Jump);
 }
 
 
@@ -87,6 +103,16 @@ void APlayerCube::RestartGame()
 {
 	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()));
 }
+void APlayerCube::Jump()
+{
+	if ((JumpCount > TimesJumped) && CanMove)
+	{
+		FVector JumpVector = FVector(0, 0, JumpForce);
+		MeshComponent->AddImpulse(JumpVector, "", true);
+
+		TimesJumped++;
+	}
+}
 void APlayerCube::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor != nullptr)
@@ -94,16 +120,27 @@ void APlayerCube::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 		AObstaclesLogic* Obstacle = Cast<AObstaclesLogic>(OtherActor);
 		ARightTrampoline* rTrampoline = Cast<ARightTrampoline>(OtherActor);
 		ALeftTrampoline* lTrampoline = Cast<ALeftTrampoline>(OtherActor);
+		ABooster_Protection* BoosterProtection = Cast<ABooster_Protection>(OtherActor);
+		ABooster_DoubleJump* BoosterDoubleJump = Cast<ABooster_DoubleJump>(OtherActor);
 
 		if (Obstacle)
 		{
-			MeshComponent->Deactivate();
-			MeshComponent->SetVisibility(false);
+			if (!isProtected)
+			{
+				MeshComponent->Deactivate();
+				MeshComponent->SetVisibility(false);
 
-			CanMove = false;
+				CanMove = false;
 
-			FTimerHandle UnusedHandle;
-			GetWorldTimerManager().SetTimer(UnusedHandle, this, &APlayerCube::RestartGame, 2.f, false);
+				FTimerHandle UnusedHandle;
+				GetWorldTimerManager().SetTimer(UnusedHandle, this, &APlayerCube::RestartGame, 2.f, false);
+			}
+			else
+			{
+				isProtected = false;
+				Obstacle->Destroy();
+			}
+			
 
 		}
 		if (rTrampoline || lTrampoline)
@@ -111,15 +148,42 @@ void APlayerCube::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 			FVector tempVector = FVector(0.f, 0.f, 0.f);
 			if (rTrampoline)
 			{
-				tempVector = FVector(0.f, -50.f, 200.f);
+				tempVector = FVector(0.f, -trampolineBackImpusle, trampolineUpImpusle);
+				rTrampoline->Destroy();
 			}
 			else if (lTrampoline)
 			{
-				tempVector = FVector(0.f, 50.f, 200.f);
+				tempVector = FVector(0.f, trampolineBackImpusle, trampolineUpImpusle);
+				lTrampoline->Destroy();
+
 			}
 			MeshComponent->AddImpulse(tempVector, "", true);
+			
+		}
+		if (BoosterProtection)
+		{
+			isProtected = true;
+			BoosterProtection->Destroy();
+		}
+		if (BoosterDoubleJump)
+		{
+			JumpCount = 2;
+			DoubleJump_TimerStarted = true;
+			DoubleJump_Timer = 0;
+			BoosterDoubleJump->Destroy();
+
 		}
 
+	}
+}
+
+void APlayerCube::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	float HitDirection = Hit.Normal.Z;
+
+	if (HitDirection >= 0)
+	{
+		TimesJumped = 0;
 	}
 }
 
